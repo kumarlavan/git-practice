@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+     <!-- <script src="./demo.js"></script> -->
+    <link rel="stylesheet" href="./style.css">
+
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-left">
+            <h1 class="brand-name">MyStore</h1>
+        </div>
+        <nav class="navbar-middle">
+            <ul class="nav-list">
+                <li><a href="#">Home</a></li>
+                <li><a href="#">Products</a></li>
+                <li><a href="#">About</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+        </nav>
+        <div class="navbar-right">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search Products...">
+            <button id="loginButton" class="nav-button">Login</button>
+            <div class="cart-icon">
+                <img src="https://img.icons8.com/material-outlined/24/shopping-cart--v1.png" alt="Cart">
+                <span id="cartBadge" class="cart-badge">0</span>
+            </div>
+            <button id="themeToggleButton" class="nav-button">Dark Mode</button>
+        </div>
+    </header>
+    <main>
+        <div id="loader" class="loader"></div>
+        <div id="productContainer" class="product-container"></div>
+        <!-- cartModel  -->
+        <div id="cartModal">
+           <div class="btn">
+            <button id="clsbtn">Close Cart</button>
+           </div>
+           <div class="cartproducts">
+
+           </div>
+        </div>
+        <!-- loginmodel -->
+
+
+         <!-- Login Modal -->
+    <div id="loginModal" class="loginmodal">
+        <div class="modal-content">
+            <span id="closeModal" class="close">&times;</span>
+            <h2>Login</h2>
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="login-btn">Login</button>
+                <div class="register-link">
+                    <p>Not registered? <a href="#" id="registerLink">Click here to register</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- product model -->
+     <!-- Product Details Modal -->
+<div id="productDetailsModal" class="modal">
+    <div class="modal-content">
+        <span id="closeProductModal" class="close">&times;</span>
+        <div class="product-details-modal">
+            <div class="product-image zoom-container">
+                <img id="modalProductImage" src="" alt="Product Image" class="zoom-image">
+                <div class="zoom-lens"></div>
+                <div class="zoom-result"></div>
+            </div>
+            <div class="product-info">
+                <h3 id="modalProductTitle">Product Title</h3>
+                <p id="modalProductDescription">Product Description</p>
+                <p id="modalProductPrice">Price: $0.00</p>
+                <p id="modalProductRating">Rating: ⭐ 0 (0 reviews)</p>
+                <button id="addToCartModalButton" class="nav-button">Add to Cart</button>
+                <button id="buynowModalButton" class="buy-now">Buy Now</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    </main>
+   <script>
+    document.addEventListener("DOMContentLoaded", () => {
+    const themeToggleButton = document.getElementById("themeToggleButton");
+    const loginButton = document.getElementById("loginButton");
+    const cartBadge = document.getElementById("cartBadge");
+    const cartIcon = document.querySelector(".cart-icon");
+    const cartModal = document.querySelector("#cartModal");
+    const cartCloseButton = document.querySelector("#clsbtn");
+    const cartproducts = document.querySelector(".cartproducts");
+    const searchInput = document.getElementById("searchInput"); // Search input field
+
+    const loginModal = document.getElementById("loginModal");
+    const closeModal = document.getElementById("closeModal");
+    const registerLink = document.getElementById("registerLink");
+    const loader = document.getElementById("loader");
+
+    const productDetailsModal = document.getElementById("productDetailsModal");
+    const closeProductModal = document.getElementById("closeProductModal");
+    const modalProductImage = document.getElementById("modalProductImage");
+    const modalProductTitle = document.getElementById("modalProductTitle");
+    const modalProductDescription = document.getElementById("modalProductDescription");
+    const modalProductPrice = document.getElementById("modalProductPrice");
+    const modalProductRating = document.getElementById("modalProductRating");
+    const addToCartModalButton = document.getElementById("addToCartModalButton");
+
+    
+
+    const zoomContainer = document.querySelector(".zoom-container");
+    const zoomImage = document.querySelector(".zoom-image");
+    const zoomLens = document.querySelector(".zoom-lens");
+    const zoomResult = document.querySelector(".zoom-result");
+
+    let cartCount = 0;
+    let products = []; // Store products globally
+    let filteredProducts = []; // Store filtered products
+
+    let carts = JSON.parse(localStorage.getItem("cart")) || [];
+    cartBadge.innerText = carts.length;
+    loader.style.display = "block";
+    // Initial cart load
+    updatecartproducts(carts); // Call this to load the cart products initially
+
+    // Fetch products from Fake Store API
+    fetch("https://fakestoreapi.com/products")
+        .then((response) => response.json())
+        .then((productData) => {
+            loader.style.display = "none";
+            products = productData; // Store the products
+            filteredProducts = products; // Initialize filtered products with all products
+            renderProducts(filteredProducts); // Render all products initially
+        })
+        .catch((error) => {
+            console.error("Error fetching products:", error);
+        });
+
+    // Toggle dark mode
+    themeToggleButton.addEventListener("click", () => {
+        document.body.classList.toggle("dark");
+        themeToggleButton.textContent = document.body.classList.contains("dark")
+            ? "Light Mode"
+            : "Dark Mode";
+    });
+
+    
+    // Cart icon click event to show cart modal
+    cartIcon.addEventListener("click", () => {
+        showCartModal();
+    });
+
+    cartCloseButton.addEventListener("click", () => {
+        cartModal.style.display = "none";
+    });
+
+    // Search functionality
+    searchInput.addEventListener("input", (event) => {
+        const query = event.target.value.toLowerCase();
+        filteredProducts = products.filter((product) => {
+            return product.title.toLowerCase().includes(query) || 
+                   product.category.toLowerCase().includes(query);
+        });
+
+        renderProducts(filteredProducts); // Re-render the filtered products
+    });
+
+    function renderProducts(productsToRender) {
+        const productContainer = document.getElementById("productContainer");
+        productContainer.innerHTML = ""; // Clear the container before rendering
+
+        if (productsToRender.length === 0) {
+            productContainer.innerHTML = "<p>No items found</p>"; // Show message if no products match
+        } else {
+            productsToRender.forEach((product) => {
+                // Create product card
+                const productCard = document.createElement("div");
+                productCard.classList.add("product-card");
+
+                // Set product card content
+                productCard.innerHTML = `
+                    <img src="${product.image}" alt="${product.title}" id="productimage">
+                    <div class="product-details">
+                        <h3 class="product-title">${product.title.slice(0,25)}</h3>
+                        <p class="product-price">$${product.price.toFixed(2)}</p>
+                        <p class="product-rating">⭐ ${product.rating.rate} (${product.rating.count} reviews)</p>
+                        
+                        <div class="product-actions">
+                            <button class="viewMore">view more</button>
+                            <button class="add-to-cart" data-id="${product.id}" data-title="${product.title}" data-price="${product.price}" data-image="${product.image}">Add to Cart</button>
+                            <button class="buy-now">Buy Now</button>
+                        </div>
+                    </div>
+                `;
+
+                // Add event listener to the "Add to Cart" button
+                const addToCartButton = productCard.querySelector(".add-to-cart");
+                addToCartButton.addEventListener("click", (event) => {
+                    addToCart(event.target);
+                });
+                const buyNowButton = productCard.querySelector(".buy-now");
+                buyNowButton.addEventListener("click", () => {
+                localStorage.setItem("selectedProduct", JSON.stringify(product));
+                 window.location.href = "./payment.html"; // Redirect to payment page
+                })
+
+                const viewMore=productCard.querySelector(".viewMore");
+                const viewtitle=productCard.querySelector(".product-title")
+                viewtitle.addEventListener("click",()=>{
+                    showProductDetails(product)
+                })
+                viewMore.addEventListener("click",()=>{
+                    showProductDetails(product)
+                })
+                // Append product card to container
+                productContainer.appendChild(productCard);
+            });
+        }
+    }
+   addToCartModalButton.addEventListener("click",(event)=>{
+    console.log(event.target);
+    
+    addToCart(event.target)
+   })
+   function addToCart(button) {
+    const product = {
+        id: button.getAttribute("data-id"),
+        title: button.getAttribute("data-title"),
+        price: button.getAttribute("data-price"),
+        image: button.getAttribute("data-image")
+    };
+
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+    // Check if the product is already in the cart
+    const productExists = cart.some(item => item.id === product.id);
+
+    if (productExists) {
+        alert("Product is already in the cart.");
+        return; // Exit the function without adding the product
+    }
+
+    cart.push(product); // Add product to cart
+    localStorage.setItem("cart", JSON.stringify(cart));
+
+    cartCount = cart.length; // Update cart count
+    cartBadge.textContent = cartCount; // Update cart badge
+
+    // Update cart products in the modal
+    updatecartproducts(cart);
+}
+
+    function updatecartproducts(cart) {
+        cartproducts.innerHTML = "";  // Clear the cart before updating
+        if (cart.length === 0) {
+            cartproducts.innerHTML = "<p>No items in the cart</p>";
+        } else {
+            cartBadge.textContent = cart.length; // Update cart badge
+            cart.forEach((item) => {
+                const cartItem = document.createElement("div");
+                cartItem.style.marginBottom = "10px";
+                cartItem.innerHTML = `
+                    <img src="${item.image}" alt="${item.title}" style="width: 50px; height: 50px; object-fit: cover;">
+                    <span>${item.title}</span>
+                    <button class="remove-from-cart" data-id="${item.id}">Remove</button>
+                `;
+                cartproducts.appendChild(cartItem);
+            });
+
+            // Re-attach event listeners for the "Remove" buttons after cart update
+            const removeButtons = document.querySelectorAll(".remove-from-cart");
+            removeButtons.forEach((button) => {
+                button.addEventListener("click", (event) => {
+                    removeFromCart(event.target);
+                });
+            });
+        }
+    }
+
+    // Show cart modal with items
+    function showCartModal() {
+        cartModal.style.display = "block";  // Show the cart modal
+    }
+
+    // Remove product from cart
+    function removeFromCart(button) {
+        const productId = button.getAttribute("data-id");
+        let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+        // Filter out the product to be removed
+        cart = cart.filter((item) => item.id !== productId);
+        localStorage.setItem("cart", JSON.stringify(cart));
+
+        cartCount = cart.length; // Update cart count
+        cartBadge.textContent = cartCount; // Update cart badge
+
+        // Update the cart products in the modal
+        updatecartproducts(cart);
+    }
+
+     // Show login modal when "Login" button is clicked
+     loginButton.addEventListener("click", () => {
+        loginModal.style.display = "flex"; // Show the modal
+    });
+
+    // Close the modal when "X" is clicked
+    closeModal.addEventListener("click", () => {
+        loginModal.style.display = "none"; // Hide the modal
+    });
+
+    // Show the registration form when the "Click here to register" link is clicked
+    registerLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        alert("Redirecting to the registration page...");
+        // You can replace this with your registration page or form
+    });
+
+    // Close modal if the user clicks outside of the modal content
+    window.addEventListener("click", (event) => {
+        if (event.target === loginModal) {
+            loginModal.style.display = "none";
+        }
+    });
+
+    // Handle login form submission
+    const loginForm = document.getElementById("loginForm");
+    loginForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        // Simple email/password validation (you can expand this with real validation)
+        if (email && password) {
+            alert("Login successful!");
+            loginModal.style.display = "none"; // Close the modal on success
+        } else {
+            alert("Please enter both email and password.");
+        }
+    });
+
+
+
+    let selectedProduct = null;
+
+    // Render product details in modal
+    function showProductDetails(product) {
+        modalProductImage.src = product.image;
+        modalProductTitle.textContent = product.title;
+        modalProductDescription.textContent = product.description;
+        modalProductPrice.textContent = `Price: $${product.price.toFixed(2)}`;
+        modalProductRating.textContent = `Rating: ⭐ ${product.rating.rate} (${product.rating.count} reviews)`;
+        addToCartModalButton.dataset.id = product.id; // Attach product ID to the button
+        addToCartModalButton.dataset.title = product.title; // Attach product ID to the button
+        addToCartModalButton.dataset.price = product.price; // Attach product ID to the button
+        addToCartModalButton.dataset.image = product.image; // Attach product ID to the button
+        productDetailsModal.style.display = "block"; // Show the modal
+    }
+
+    // Close product details modal
+    closeProductModal.addEventListener("click", () => {
+        productDetailsModal.style.display = "none";
+    });
+
+    // Close modal if the user clicks outside the modal content
+    window.addEventListener("click", (event) => {
+        if (event.target === productDetailsModal) {
+            productDetailsModal.style.display = "none";
+        }
+    });
+
+    // Add click listener for product cards
+  
+
+    // Add product to cart from modal
+    addToCartModalButton.addEventListener("click", (event) => {
+        const productId = event.target.dataset.id;
+        const product = products.find((p) => p.id == productId);
+        if (product) {
+            addToCart({
+                id: product.id,
+                title: product.title,
+                price: product.price,
+                image: product.image,
+            });
+            productDetailsModal.style.display = "none"; // Close the modal
+        }
+    });
+
+
+    zoomContainer.addEventListener("mousemove", (e) => {
+        zoomLens.style.display = "block";
+        zoomResult.style.display = "block";
+
+        const bounds = zoomContainer.getBoundingClientRect();
+        const lensSize = zoomLens.offsetWidth / 2;
+
+        let x = e.clientX - bounds.left - lensSize;
+        let y = e.clientY - bounds.top - lensSize;
+
+        // Prevent lens from moving out of bounds
+        x = Math.max(0, Math.min(x, bounds.width - zoomLens.offsetWidth));
+        y = Math.max(0, Math.min(y, bounds.height - zoomLens.offsetHeight));
+
+        zoomLens.style.left = `${x}px`;
+        zoomLens.style.top = `${y}px`;
+
+        const fx = zoomResult.offsetWidth / zoomLens.offsetWidth;
+        const fy = zoomResult.offsetHeight / zoomLens.offsetHeight;
+
+        zoomResult.style.backgroundImage = `url('${zoomImage.src}')`;
+        zoomResult.style.backgroundPosition = `-${x * fx}px -${y * fy}px`;
+        zoomResult.style.backgroundSize = `${zoomImage.width * fx}px ${zoomImage.height * fy}px`;
+    });
+
+    zoomContainer.addEventListener("mouseleave", () => {
+        zoomLens.style.display = "none";
+        zoomResult.style.display = "none";
+    });
+
+ 
+});
+
+
+   </script>
+</body>
+</html>

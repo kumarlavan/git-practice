@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Page</title>
+    <link rel="stylesheet" href="./payment.css">
+</head>
+<body>
+    <div class="payment-container">
+        <h1>Payment Details</h1>
+        <div class="product-summary">
+            <h2>Product Summary</h2>
+            <img id="productImage" src="" alt="Product Image">
+            <p id="productTitle">Product Title</p>
+            <p>Price per unit: $<span id="productPrice">0.00</span></p>
+            <label for="quantity">Quantity:</label>
+            <input type="number" id="quantity" value="1" min="1">
+        </div>
+        <div class="user-details">
+            <h2>Billing Information</h2>
+            <form id="paymentForm">
+                <div class="input-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" placeholder="Enter your email" required>
+                </div>
+                <div class="input-group">
+                    <label for="address">Address:</label>
+                    <textarea id="address" placeholder="Enter your address" required></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="coupon">Coupon Code:</label>
+                    <input type="text" id="coupon" placeholder="Enter coupon code (if any)">
+                </div>
+                <div class="price-details">
+                    <p>Subtotal: $<span id="subtotal">0.00</span></p>
+                    <p>GST (18%): $<span id="gst">0.00</span></p>
+                    <p>Total: $<span id="totalPrice">0.00</span></p>
+                </div>
+                <button type="submit" class="pay-now-btn">Pay Now</button>
+            </form>
+        </div>
+    </div>
+    <script src="./payment.js"></script>
+</body>
+</html>
